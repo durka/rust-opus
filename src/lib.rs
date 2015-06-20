@@ -3,6 +3,7 @@ extern crate libc;
 use libc::*;
 use std::ffi::CStr;
 use std::str;
+use std::mem;
 
 mod ffi;
 
@@ -26,7 +27,7 @@ pub enum Application {
 
 #[derive(Debug)]
 pub struct OpusEncoder {
-	ptr: size_t,
+	ptr: *mut c_void,
 	error: i32,
 }
 #[derive(Debug, PartialEq)]
@@ -145,12 +146,12 @@ impl OpusEncoder {
 			channels: Channels,
 			application: Application) -> Result<OpusEncoder, OpusError> {
 		let mut error = 0i32;
-		let ptr = unsafe { ffi::opus_encoder_create(
+		let ptr = unsafe { mem::transmute(ffi::opus_encoder_create(
 			sampling_rate as i32,
 			channels as i32,
 			application as i32,
 			&mut error
-			)};
+			))};
 		let mut _error = OpusError::new(error);
 		match _error {
 			OpusError::Success => Ok(OpusEncoder { ptr: ptr, error: error }),
@@ -163,7 +164,7 @@ impl OpusEncoder {
 		let ret = OpusError::new(
 			unsafe {
 				ffi::opus_encoder_ctl(
-					&mut self.ptr,
+					self.ptr,
 					OpusRequest::GetBitrate as i32,
 					&mut out
 				)
@@ -177,7 +178,7 @@ impl OpusEncoder {
 	}
 
 	pub fn set_bitrate(&mut self, bitrate: i32) -> Result<(), OpusError> {
-		encoder_ctl!(&mut self.ptr, OpusRequest::SetBitrate, bitrate)
+		encoder_ctl!(self.ptr, OpusRequest::SetBitrate, bitrate)
 		/*let ret = OpusError::new(
 			unsafe {
 				ffi::opus_encoder_ctl(
@@ -251,8 +252,8 @@ mod tests {
 	#[test]
 	fn encoder_get_bitrate() {
 		let mut opus_enc = make_encoder().unwrap();
-		let _ = opus_enc.set_bitrate(4000);
-		assert_eq!(opus_enc.get_bitrate().unwrap(), 500)
+		let _ = opus_enc.set_bitrate(4242);
+		assert_eq!(opus_enc.get_bitrate().unwrap(), 4242)
 	}
 }
 
