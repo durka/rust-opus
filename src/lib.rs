@@ -159,18 +159,18 @@ impl OpusEncoder {
 	}
 
 	pub fn get_bitrate(&mut self) -> Result<i32, OpusError> {
-		let mut out = Box::new(0i32);
+		let mut out = 0i32;
 		let ret = OpusError::new(
 			unsafe {
 				ffi::opus_encoder_ctl(
 					&mut self.ptr,
 					OpusRequest::GetBitrate as i32,
-					*out
+					&mut out
 				)
 			});
-		println!("<out>{:x}</out>", *out);
+		println!("<out>{:x}</out>", out);
 		match ret {
-			OpusError::Success => Ok(*out),
+			OpusError::Success => Ok(out),
 			_ => Err(ret)
 		}
 		
